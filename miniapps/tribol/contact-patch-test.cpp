@@ -204,11 +204,13 @@ int main(int argc, char *argv[])
    // registerMfemCouplingScheme(). It's lifetime coincides with the lifetime of
    // the coupling scheme, so the host code can reference and update it as
    // needed.
+   // We need to get the pressure unknowns first, as there's an allreduce hidden
+   // in there.
    auto& pressure = tribol::getMfemPressure(coupling_scheme_id);
+   auto  pressure_unknowns = pressure.ParFESpace()->GlobalTrueVSize();
    if (mfem::Mpi::Root())
    {
-      std::cout << "Number of pressure unknowns: " <<
-                pressure.ParFESpace()->GlobalTrueVSize() << std::endl;
+      std::cout << "Number of pressure unknowns: " << pressure_unknowns << std::endl;
    }
 
    // Set Tribol options for Lagrange multiplier enforcement
