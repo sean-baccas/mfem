@@ -257,21 +257,10 @@ int main(int argc, char *argv[])
    //     discontinuous flux (L2) and a space for the smoothed flux.
    L2_FECollection flux_fec(order, dim);
    ParFiniteElementSpace flux_fes(pmesh, &flux_fec, sdim);
-   FiniteElementCollection *smooth_flux_fec = NULL;
-   ParFiniteElementSpace *smooth_flux_fes = NULL;
-   if (smooth_rt && dim > 1)
-   {
-      // Use an H(div) space for the smoothed flux (this is the default).
-      smooth_flux_fec = new RT_FECollection(order-1, dim);
-      smooth_flux_fes = new ParFiniteElementSpace(pmesh, smooth_flux_fec, 1);
-   }
-   else
-   {
-      // Another possible option for the smoothed flux space: H1^dim space
-      smooth_flux_fec = new H1_FECollection(order, dim);
-      smooth_flux_fes = new ParFiniteElementSpace(pmesh, smooth_flux_fec, dim);
-   }
-   L2ZienkiewiczZhuEstimator estimator(*integ, x, flux_fes, *smooth_flux_fes);
+   H1_FECollection smooth_flux_fec(order, dim);;
+   ParFiniteElementSpace smooth_flux_fes(pmesh, &smooth_flux_fec, dim);
+
+   L2ZienkiewiczZhuEstimator estimator(*integ, x, flux_fes, smooth_flux_fes);
 
    // 15. A refiner selects and refines elements based on a refinement strategy.
    //     The strategy here is to refine elements with errors larger than a
@@ -408,6 +397,19 @@ int main(int argc, char *argv[])
       if (pRefine)
       {
          fespace.PRefineAndUpdate(prefinements);
+
+         // ditto for the flux/smooth flux spaces
+         flux_fes.PRefineAndUpdate(prefinements);
+         smooth_flux_fes.PRefineAndUpdate(prefinements);
+
+         // update the mesh sequence
+         pmesh->PRefine();
+
+         // finally, we have to update again to make sure
+         // the sequence are correct.
+         fespace.Update();
+         flux_fes.Update();
+         smooth_flux_fes.Update();
       }
       else
       {
@@ -486,8 +488,6 @@ int main(int argc, char *argv[])
       xo.Save(order_ofs);
    }
 
-   delete smooth_flux_fes;
-   delete smooth_flux_fec;
    delete pmesh;
 
    return 0;

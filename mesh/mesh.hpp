@@ -829,6 +829,8 @@ public:
    /// Clear the contents of the Mesh.
    void Clear() { Destroy(); SetEmpty(); }
 
+   void PRefine() { last_operation = Mesh::REFINE; sequence++; }
+
    /// Destroys Mesh.
    virtual ~Mesh() { DestroyPointers(); }
 
